@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Estructura de Precios y Márgenes</title>
+<style>
+  :root{
+    --blue:#2f6f91;
+    --blue-dark:#1d5570;
+    --cell-price:#e8eef2;
+    --cell-calc:#eaf3ea;
+    --cell-cost:#f5f5f5;
+    --cell-margin-edit:#fff8e1;
+    --header-bg:#dce9f2;
+    --border:#c0d0da;
+    --pos:#1a7a3a;
+    --neg:#c0392b;
+    --neu:#555;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Calibri,"Segoe UI",Arial,sans-serif;background:#fff;color:#111;padding:20px;font-size:13px;}
+
+  .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .zone-wrap{display:flex;align-items:center;gap:10px;}
+  .zone-wrap label{font-weight:700;font-size:13px;}
+  select.zone-sel{background:var(--header-bg);border:1px solid var(--border);padding:5px 10px;font-size:13px;width:200px;border-radius:2px;}
+  .pdf-btn{background:#000;color:#fff;font-weight:700;border:none;padding:9px 20px;font-size:13px;cursor:pointer;border-radius:2px;}
+
+  .second-row{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:10px;}
+  .prod-box{flex:1;background:var(--header-bg);border:1px solid var(--border);padding:7px 12px;}
+  .prod-box input{width:100%;border:none;background:transparent;font-size:13px;outline:none;}
+  .unds-wrap{display:flex;align-items:center;gap:8px;white-space:nowrap;}
+  .unds-wrap label{font-weight:700;font-size:13px;}
+  .unds-box{background:var(--header-bg);border:1px solid var(--border);padding:5px 10px;}
+  .unds-box input{width:44px;border:none;background:transparent;font-size:13px;font-weight:700;text-align:center;outline:none;}
+
+  /* MODE BAR */
+  .mode-bar{display:flex;align-items:stretch;margin-bottom:18px;border:1px solid var(--border);border-radius:4px;overflow:hidden;background:#f4f8fa;}
+  .mode-group-label{font-weight:700;font-size:11px;color:#666;letter-spacing:.3px;text-transform:uppercase;padding:0 12px;border-right:1px solid var(--border);display:flex;align-items:center;white-space:nowrap;background:#edf2f5;}
+  .main-content{display:block;}
+  .table-panel{flex:none;min-width:auto;}
+  .diagram-panel{display:block;flex:none;gap:0;}
+  .mode-group{display:flex;align-items:center;border-right:1px solid var(--border);}
+  .mode-group:last-child{border-right:none;}
+  .mode-opt{display:flex;align-items:center;gap:6px;padding:9px 16px;cursor:pointer;font-size:13px;border-right:1px solid #dde6ec;}
+  .mode-opt:last-child{border-right:none;}
+  .mode-opt:hover{background:#e2ecf2;}
+  .mode-opt input[type=radio]{cursor:pointer;accent-color:var(--blue);}
+
+  /* TABLE */
+  .price-table{border-collapse:collapse;width:40%;margin-bottom:24px;}
+  .price-table th{background:var(--blue);color:#fff;font-size:13px;font-weight:700;border:1px solid var(--border);padding:0;}
+  .price-table th .th-inner{padding:8px 10px;display:block;font-size:15px;}
+  .price-table th input{background:transparent;border:none;color:#fff;font-size:14px;font-weight:700;text-align:center;outline:none;width:100%;padding:8px 6px;}
+  .price-table th input::placeholder{color:rgba(255,255,255,.55);}
+  .price-table td{border:1px solid var(--border);padding:0;}
+
+  /* Channel separator */
+  .chan-header td{background:#e0ecf5;font-weight:700;font-size:12px;color:var(--blue-dark);padding:4px 8px;border-top:2px solid var(--blue);}
+
+  /* Row labels */
+  .row-lbl{background:var(--cell-cost);font-size:14px;color:#666;padding:5px 10px;text-align:left;white-space:nowrap;}
+
+  /* Price row - editable (mode 1) */
+  .cell-price-edit{background:var(--cell-price);}
+  .cell-price-edit input{width:100%;border:none;background:transparent;font-size:16px;font-weight:700;color:#111;text-align:center;padding:7px 4px;outline:none;font-family:inherit;}
+
+  /* Price row - calculated (mode 2) */
+  .cell-price-calc{background:var(--cell-calc);text-align:center;padding:7px 4px;}
+  .calc-price-val{font-size:16px;font-weight:700;color:#1a5c1a;}
+  .calc-price-sub{font-size:9px;color:#888;display:block;}
+
+  /* Margin row - display (mode 1) */
+  .cell-margin-disp{background:#fff;text-align:center;padding:3px 4px;}
+  .margin-val{font-weight:700;font-size:11px;}
+  .margin-val.pos{color:var(--pos);}
+  .margin-val.neg{color:var(--neg);}
+  .margin-val.neu{color:var(--neu);}
+
+  /* Margin row - editable (mode 2) */
+  .cell-margin-edit{background:var(--cell-margin-edit);text-align:center;}
+  .mg-wrap{display:flex;align-items:center;justify-content:center;gap:2px;padding:3px 4px;}
+  .mg-wrap input{width:52px;border:1px solid #d0b860;border-radius:3px;background:#fffdf0;font-size:13px;font-weight:700;color:#7a5c00;text-align:center;padding:2px 4px;outline:none;font-family:inherit;}
+  .pct-sym{font-size:12px;font-weight:700;color:#7a5c00;}
+
+  /* Diagrams */
+  .diag-section h3{font-size:11px;font-weight:700;color:#555;margin-bottom:12px;letter-spacing:.4px;text-transform:uppercase;}
+  .diag-section{display:flex;flex-direction:column;gap:10px;}
+  .diag-card{border:1px solid var(--border);border-radius:4px;overflow:hidden;background:#fafcfe;margin-bottom:0;}
+  .diag-card-title{background:var(--blue);color:#fff;font-weight:700;font-size:12px;padding:6px 14px;text-align:center;}
+  .diag-card-body{padding:10px 12px 8px;}
+  .diag-card-body svg{display:block;width:100%;height:260px;}
+
+  @media print{
+    @page{size:A4 landscape;margin:5mm;}
+    .pdf-btn{display:none;}
+    html, body{width:297mm;height:210mm;margin:0;padding:0;}
+    body{padding:5mm;font-size:10px;}
+    .top-bar,
+    .second-row,
+    .mode-bar,
+    .main-content,
+    .price-table,
+    .diag-section,
+    .diag-card{page-break-inside:avoid;break-inside:avoid;}
+    .main-content{display:flex;flex-wrap:nowrap;gap:8px;}
+    .table-panel{flex:0 0 28%;}
+    .diagram-panel{flex:1 1 72%;}
+    .price-table{width:100%;margin-bottom:10px;}
+    .diag-section{display:flex;flex-direction:column;gap:6px;}
+    .diag-card{margin-bottom:6px;}
+    .diag-card-body{padding:4px 6px 4px;}
+    .diag-card-body svg{height:110px;}
+    .mode-bar,.second-row{flex-wrap:wrap;gap:6px;}
+    .mode-opt{padding:5px 8px;}
+    .prod-box,.unds-box{padding:5px 8px;}
+    .price-table th .th-inner{padding:4px 5px;}
+    .price-table td{padding:0;}
+    .row-lbl{padding:2px 5px;}
+    .cell-price-edit input,
+    .cell-price-calc,
+    .cell-margin-edit .mg-wrap,
+    .cell-margin-disp{font-size:9px;}
+    .price-table th input{padding:4px 3px;font-size:10px;}
+    .mode-bar{border:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="zone-wrap">
+    <label>Seleccionar Zona</label>
+    <select class="zone-sel">
+      <option value="" disabled selected hidden></option>
+      <option>Moderno</option><option>Lima</option><option>Norte</option><option>Sur</option><option>Centro</option>
+    </select>
+  </div>
+  <button class="pdf-btn" onclick="window.print()">GUARDAR PDF</button>
+</div>
+
+<div class="second-row">
+  <div class="prod-box"><input type="text" placeholder="Espacio para escribir el nombre del producto"></div>
+  <div class="unds-wrap">
+    <label>Unds por presentacion</label>
+    <div class="unds-box"><input type="number" id="unidades" value="24" min="1" oninput="update()"></div>
+  </div>
+</div>
+
+<div class="mode-bar">
+  <div class="mode-group-label">Modo</div>
+  <div class="mode-group">
+    <label class="mode-opt">
+      <input type="radio" name="appMode" value="calcMargen" checked onchange="switchMode()">
+      Ingresar precio → calcular margen
+    </label>
+    <label class="mode-opt">
+      <input type="radio" name="appMode" value="calcPrecio" onchange="switchMode()">
+      Ingresar margen → calcular precio
+    </label>
+  </div>
+  <div class="mode-group-label" style="border-left:1px solid var(--border);"> % Margen </div>
+  <div class="mode-group">
+    <label class="mode-opt"><input type="radio" name="pctMode" value="markup" checked onchange="update()"> Markup</label>
+    <label class="mode-opt"><input type="radio" name="pctMode" value="markdown" onchange="update()"> Markdown</label>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="table-panel">
+    <table class="price-table" id="mainTable">
+      <thead>
+        <tr>
+          <th style="width:105px;background:#3a7a97;"><span class="th-inner">Canal</span></th>
+          <th><input type="text" id="col0name" value="PEUSAC" oninput="update()"></th>
+          <th><input type="text" id="col1name" value="OTRA EMPRESA" oninput="update()"></th>
+          <th><input type="text" id="col2name" value="OTRA EMPRESA" oninput="update()"></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <div class="diagram-panel">
+    <div class="diag-section">
+      <h3>Diagramas de distribución</h3>
+      <div class="diag-card">
+        <div class="diag-card-title" id="diag0-title">PEUSAC</div>
+        <div class="diag-card-body"><svg id="diag0-svg" viewBox="0 0 920 220" height="220"></svg></div>
+      </div>
+      <div class="diag-card">
+        <div class="diag-card-title" id="diag1-title">OTRA EMPRESA</div>
+        <div class="diag-card-body"><svg id="diag1-svg" viewBox="0 0 920 220" height="220"></svg></div>
+      </div>
+      <div class="diag-card">
+        <div class="diag-card-title" id="diag2-title">OTRA EMPRESA</div>
+        <div class="diag-card-body"><svg id="diag2-svg" viewBox="0 0 920 220" height="220"></svg></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const NCOLS = 3;
+
+// Channels: id, label, isPvp
+const CHANS = [
+  {id:'dex', label:'DEX',        isPvp:false},
+  {id:'dim', label:'DIM',        isPvp:false},
+  {id:'may', label:'MAYORISTA',  isPvp:false},
+  {id:'min', label:'MINORISTA',  isPvp:false},
+  {id:'pvp', label:'PVP',        isPvp:true},
+];
+
+// Default values
+const DEF_BASE    = [50, 48, 46];
+const DEF_PRICES  = [[60,58,55],[60,58,55],[70,68,65],[80,78,75],[5,4.9,4.8]];
+const DEF_MARGINS = [[20,20,20],[20,20,20],[14.3,14.3,14.3],[14.3,14.3,14.3],[6.25,6.25,6.25]];
+
+// ── BUILD TABLE ───────────────────────────────────────────────────────
+const tbody = document.getElementById('tableBody');
+
+// Base price row (always shown, editable)
+const baseHeadRow = document.createElement('tr');
+baseHeadRow.className = 'chan-header';
+baseHeadRow.innerHTML = `<td colspan="${NCOLS+1}" style="background:#d6eaf5;color:var(--blue-dark);">Costo Total</td>`;
+tbody.appendChild(baseHeadRow);
+
+const baseRow = document.createElement('tr');
+baseRow.innerHTML = `<td class="row-lbl" style="background:#d6eaf5;font-size:11px;font-weight:700;color:var(--blue-dark);">S/ Costo</td>`
+  + Array.from({length:NCOLS},(_,ci)=>
+      `<td id="base-cell-${ci}" class="cell-price-edit" style="background:#d6eaf5;">
+        <input type="number" id="base-${ci}" value="${DEF_BASE[ci]}" step="0.01" min="0" oninput="update()">
+      </td>`
+    ).join('');
+tbody.appendChild(baseRow);
+
+// Channel rows
+CHANS.forEach((ch,ri)=>{
+  // Section header
+  const hrow = document.createElement('tr');
+  hrow.className = 'chan-header';
+  hrow.innerHTML = `<td colspan="${NCOLS+1}">${ch.label}${ch.isPvp?' (por unidad)':''}</td>`;
+  tbody.appendChild(hrow);
+
+  // Price row
+  const prow = document.createElement('tr');
+  prow.id = `prow-${ri}`;
+  prow.innerHTML = `<td class="row-lbl" style="font-weight:700;color:#111;">${ch.isPvp?'Precio /und':'Precio venta'}</td>`
+    + Array.from({length:NCOLS},(_,ci)=>
+        `<td id="pcell-${ri}-${ci}" class="cell-price-edit">
+          <input type="number" id="price-${ri}-${ci}" value="${DEF_PRICES[ri][ci]}" step="0.01" min="0" oninput="update()">
+        </td>`
+      ).join('');
+  tbody.appendChild(prow);
+
+  // Margin row
+  const mrow = document.createElement('tr');
+  mrow.innerHTML = `<td class="row-lbl">Margen</td>`
+    + Array.from({length:NCOLS},(_,ci)=>
+        `<td id="mcell-${ri}-${ci}" class="cell-margin-disp">
+          <span class="margin-val neu" id="mg-${ri}-${ci}">—</span>
+        </td>`
+      ).join('');
+  tbody.appendChild(mrow);
+});
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+function num(id){
+  const el = document.getElementById(id);
+  if(!el) return 0;
+  const raw = el.value ?? el.textContent ?? '';
+  return parseFloat(raw.toString().replace(/[^0-9.\-]/g,'')) || 0;
+}
+function appMode(){return document.querySelector('input[name="appMode"]:checked').value;}
+function pctMode(){return document.querySelector('input[name="pctMode"]:checked').value;}
+
+function calcSaleFromMargin(cost, pct){
+  if(pctMode()==='markup') return cost*(1+pct/100);
+  return pct<100 ? cost/(1-pct/100) : 0;
+}
+function reverseSaleFromMargin(sale, pct){
+  if(pctMode()==='markup') return sale/(1+pct/100);
+  return sale*(1-pct/100);
+}
+function calcPct(margin,cost,sale){
+  const base = pctMode()==='markup'?cost:sale;
+  return base>0?((margin/base)*100).toFixed(1)+'%':null;
+}
+function fmtMargin(margin,cost,sale){
+  const p=calcPct(margin,cost,sale);
+  return (margin>=0?'+':'')+'S/ '+margin.toFixed(2)+(p?' ('+p+')':'');
+}
+
+// Build per-column data: {cost, sale, margin, price} for each channel
+function getColData(ci, unds){
+  const mode = appMode();
+  const data = [];
+  let base = num(`base-${ci}`);
+
+  if(mode==='calcPrecio'){
+    const dexSale = num(`price-0-${ci}`) || DEF_PRICES[0][ci];
+    const dexPct = num(`mg-input-0-${ci}`) || DEF_MARGINS[0][ci];
+    base = reverseSaleFromMargin(dexSale, dexPct);
+  }
+
+  CHANS.forEach((ch,ri)=>{
+    const cost = (ri===0||ri===1) ? base : data[ri-1].sale;
+
+    let sale, margin;
+    if(mode==='calcMargen'){
+      const price = num(`price-${ri}-${ci}`);
+      sale = ch.isPvp ? price*unds : price;
+      margin = sale - cost;
+    } else {
+      const pct = num(`mg-input-${ri}-${ci}`) || DEF_MARGINS[ri][ci];
+      sale = calcSaleFromMargin(cost, pct);
+      margin = sale - cost;
+    }
+    const price = ch.isPvp ? sale/unds : sale;
+    data.push({cost, sale, margin, price});
+  });
+  return data;
+}
+
+// ── SWITCH MODE ───────────────────────────────────────────────────────
+function switchMode(){
+  const mode = appMode();
+  CHANS.forEach((ch,ri)=>{
+    for(let ci=0;ci<NCOLS;ci++){
+      const pcell = document.getElementById(`pcell-${ri}-${ci}`);
+      const mcell = document.getElementById(`mcell-${ri}-${ci}`);
+      const baseCell = document.getElementById(`base-cell-${ci}`);
+
+      if(mode==='calcMargen'){
+        if(baseCell){
+          const currentBase = num(`base-${ci}`) || DEF_BASE[ci];
+          baseCell.className = 'cell-price-edit';
+          baseCell.innerHTML = `<input type="number" id="base-${ci}" value="${currentBase}" step="0.01" min="0" oninput="update()">`;
+        }
+        pcell.className = 'cell-price-edit';
+        const currentPrice = num(`price-${ri}-${ci}`) || DEF_PRICES[ri][ci];
+        pcell.innerHTML = `<input type="number" id="price-${ri}-${ci}" value="${currentPrice}" step="0.01" min="0" oninput="update()">`;
+        mcell.className = 'cell-margin-disp';
+        const currentMargin = num(`mg-input-${ri}-${ci}`) || parseFloat((document.getElementById(`mg-${ri}-${ci}`)?.textContent||'').replace('%','')) || DEF_MARGINS[ri][ci];
+        mcell.innerHTML = `<span class="margin-val neu" id="mg-${ri}-${ci}">—</span>`;
+      } else {
+        if(baseCell){
+          baseCell.className = 'cell-price-calc';
+          const baseValue = num(`base-${ci}`) || DEF_BASE[ci];
+          baseCell.innerHTML = `<span class="calc-price-val" id="base-${ci}">S/ ${baseValue.toFixed(2)}</span>`;
+        }
+        const currentPrice = num(`price-${ri}-${ci}`) || DEF_PRICES[ri][ci];
+        pcell.className = 'cell-price-calc';
+        pcell.innerHTML = `<span class="calc-price-sub">${ch.isPvp?'precio calculado /und':'precio calculado'}</span><span class="calc-price-val" id="price-${ri}-${ci}">S/ ${currentPrice.toFixed(2)}</span>`;
+        mcell.className = 'cell-margin-edit';
+        const currentMargin = num(`mg-input-${ri}-${ci}`) || parseFloat((document.getElementById(`mg-${ri}-${ci}`)?.textContent||'').replace('%','')) || DEF_MARGINS[ri][ci];
+        mcell.innerHTML = `<div class="mg-wrap">
+          <input type="number" id="mg-input-${ri}-${ci}" value="${currentMargin}" step="0.1" min="0" max="99.9" oninput="update()">
+          <span class="pct-sym">%</span>
+        </div>`;
+      }
+    }
+  });
+  update();
+}
+
+// ── UPDATE ────────────────────────────────────────────────────────────
+function update(){
+  const unds = num('unidades');
+  const mode = appMode();
+
+  for(let ci=0;ci<NCOLS;ci++){
+    const data = getColData(ci, unds);
+
+    data.forEach((d,ri)=>{
+      if(mode==='calcMargen'){
+        // Margin display
+        const mgEl = document.getElementById(`mg-${ri}-${ci}`);
+        if(mgEl){
+          mgEl.textContent = fmtMargin(d.margin, d.cost, d.sale);
+          mgEl.className = 'margin-val '+(d.margin>0.001?'pos':d.margin<-0.001?'neg':'neu');
+        }
+      } else {
+        // Price calculated display
+        const prEl = document.getElementById(`price-${ri}-${ci}`);
+        if(prEl) prEl.textContent = 'S/ '+d.price.toFixed(2)+(CHANS[ri].isPvp?' /und':'');
+      }
+    });
+
+    if(mode==='calcPrecio'){
+      const baseEl = document.getElementById(`base-${ci}`);
+      if(baseEl) baseEl.textContent = 'S/ '+data[0].cost.toFixed(2);
+    }
+
+    // Diagram title
+    const name = document.getElementById(`col${ci}name`).value||('Empresa '+(ci+1));
+    document.getElementById(`diag${ci}-title`).textContent = name;
+    buildDiag(`diag${ci}-svg`, ci, unds, data, name);
+  }
+}
+
+// ── SVG DIAGRAM ───────────────────────────────────────────────────────
+const NS='http://www.w3.org/2000/svg';
+function mk(tag,a={}){const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);return e;}
+
+function buildDiag(svgId,ci,unds,data,name){
+  const svg=document.getElementById(svgId);
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+
+  const mid='arr'+ci;
+  const defs=mk('defs');
+  const marker=mk('marker',{id:mid,viewBox:'0 0 8 8',refX:'7',refY:'4',markerWidth:'5',markerHeight:'5',orient:'auto'});
+  marker.appendChild(mk('path',{d:'M0,0 L8,4 L0,8 z',fill:'#2f6f91'}));
+  defs.appendChild(marker);svg.appendChild(defs);
+
+  const base = num(`base-${ci}`);
+  const vDex=data[0].sale, vDim=data[1].sale, vMay=data[2].sale, vMin=data[3].sale, vPvp=data[4].sale;
+
+  const P ={x:70,  y:102};
+  const D ={x:235, y:42};
+  const DM={x:235, y:163};
+  const MA={x:480, y:102};
+  const MI={x:675, y:102};
+  const PV={x:860, y:102};
+  const NW=92, NH=38;
+
+  function arrow(x1,y1,x2,y2){
+    svg.appendChild(mk('line',{x1,y1,x2,y2,stroke:'#2f6f91','stroke-width':'1.8','marker-end':`url(#${mid})`}));
+  }
+  function arcArrow(x1,y1,x2,y2,bend){
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    svg.appendChild(mk('path',{d:`M${x1},${y1} Q${mx},${my+bend} ${x2},${y2}`,
+      stroke:'#2f6f91','stroke-width':'1.8',fill:'none','stroke-dasharray':'6,3','marker-end':`url(#${mid})`}));
+    return {bx:mx, by:my+bend*0.55};
+  }
+  function node(cx,cy,label,val){
+    svg.appendChild(mk('rect',{x:cx-NW/2,y:cy-NH/2,width:NW,height:NH,rx:4,fill:'#fff',stroke:'#b0c8d6','stroke-width':'1.2'}));
+    const ty=val!==null?cy-8:cy+4;
+    const t=mk('text',{x:cx,y:ty,'text-anchor':'middle','font-size':'13','font-weight':'700',fill:'#111','font-family':'Calibri,sans-serif'});
+    t.textContent=label; svg.appendChild(t);
+    if(val!==null){
+      const t2=mk('text',{x:cx,y:cy+10,'text-anchor':'middle','font-size':'13',fill:'#444','font-family':'Calibri,sans-serif'});
+      t2.textContent='S/ '+val.toFixed(2); svg.appendChild(t2);
+    }
+  }
+  function bdg(cx,cy,margin,cost,sale){
+    const txt=fmtMargin(margin,cost,sale);
+    const w=Math.max(txt.length*6+14, 80), h=22;
+    svg.appendChild(mk('rect',{x:cx-w/2,y:cy-h/2,width:w,height:h,rx:4,fill:'#f4fbff',stroke:'#9bb8d1','stroke-width':'1.2'}));
+    const t=mk('text',{x:cx,y:cy+6,'text-anchor':'middle','font-size':'13','font-weight':'700','font-family':'Calibri,sans-serif',
+      fill:margin>0.001?'#1a7a3a':margin<-0.001?'#c0392b':'#333'});
+    t.textContent=txt; svg.appendChild(t);
+  }
+
+  arrow(P.x+NW/2,  P.y-10,  D.x-NW/2,  D.y+8);
+  arrow(P.x+NW/2,  P.y+10,  DM.x-NW/2, DM.y-8);
+  arrow(D.x+NW/2,  D.y+8,   MA.x-NW/2, MA.y-12);
+  arrow(DM.x+NW/2, DM.y-8,  MA.x-NW/2, MA.y+12);
+  const bp1=arcArrow(D.x+NW/2,  D.y,  MI.x-NW/2, MI.y-10, -60);
+  const bp2=arcArrow(DM.x+NW/2, DM.y, MI.x-NW/2, MI.y+10,  60);
+  arrow(MA.x+NW/2, MA.y,    MI.x-NW/2, MI.y);
+  arrow(MI.x+NW/2, MI.y,    PV.x-NW/2, PV.y);
+
+  bdg((P.x+D.x)/2-12,  (P.y+D.y)/2-40,   vDex-base, base, vDex);
+  bdg((P.x+DM.x)/2-12, (P.y+DM.y)/2+40,  vDim-base, base, vDim);
+  bdg((D.x+MA.x)/2,    (D.y+MA.y)/2-24,  vMay-vDex, vDex, vMay);
+  bdg((DM.x+MA.x)/2,   (DM.y+MA.y)/2+24, vMay-vDim, vDim, vMay);
+  bdg(bp1.bx,           bp1.by-18,         vMin-vDex, vDex, vMin);
+  bdg(bp2.bx,           bp2.by+18,         vMin-vDim, vDim, vMin);
+  bdg((MA.x+MI.x)/2,   MA.y-24,           vMin-vMay, vMay, vMin);
+  bdg((MI.x+PV.x)/2,   MI.y-24,           vPvp-vMin, vMin, vPvp);
+
+  node(P.x,  P.y,  name,          base);
+  node(D.x,  D.y,  'DEX',        vDex);
+  node(DM.x, DM.y, 'DIM',        vDim);
+  node(MA.x, MA.y, 'MAYORISTAS', vMay);
+  node(MI.x, MI.y, 'MINORISTAS', vMin);
+  node(PV.x, PV.y, 'PVP',        vPvp);
+}
+
+update();
+</script>
+</body>
+</html>
